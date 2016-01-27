@@ -23,13 +23,15 @@ class Database(object):
         #
         # Your code here.
         #
-        data = open(db_file,"r+") 
-        #database = []
+        data = open(db_file,"r") 
+        res = ""
         for i in data:
-            self.database.append(i)
-            #print(i)
+            if i == "%\n": 
+                self.database.append(res)
+                res = ""
+                i = ""
+            res = res + "\n" + i
         data.close()
-        self.rand.randrange(0,len(self.database)-1)
         pass
 
     def read(self):
@@ -37,7 +39,7 @@ class Database(object):
         #
         # Your code here.
         #
-        print(self.rand.choice(self.database))
+        return self.rand.choice(self.database)
         pass
 
     def write(self, fortune):
@@ -49,5 +51,4 @@ class Database(object):
         self.database.append(fortune)
         data = open(self.db_file,"a")
         data.write(fortune)
-        self.rand.randrange(0,len(self.database)-1)
         pass

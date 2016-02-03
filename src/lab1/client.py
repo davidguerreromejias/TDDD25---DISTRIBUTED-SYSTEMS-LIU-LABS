@@ -70,12 +70,29 @@ class DatabaseProxy(object):
         #
         # Your code here.
         #
+        arguments = []
+        message = {"method": "read" , "args": arguments}
+        s = socket.create_connection(self.address)
+        s.sendall(json.dumps(message).encode('utf-8'))
+        #s.flush()
+        result = s.recv(4096)
+        result = json.loads(result.encode('utf-8'))
+        s.close()
+        return result
         pass
 
     def write(self, fortune):
         #
         # Your code here.
         #
+        arguments = []
+        message = {"method": "write" , "args": arguments}
+        s = socket.create_connection(self.address)
+        s.sendall(json.dumps(message).encode('utf-8'))
+        #s.flush()
+        result = json.loads(s.recv(4096))
+        s.close()
+        return result
         pass
 
 # -----------------------------------------------------------------------------

@@ -72,11 +72,13 @@ class DatabaseProxy(object):
         #
         arguments = []
         message = {"method": "read" , "args": arguments}
-        s = socket.create_connection(self.address)
-        s.sendall(json.dumps(message).encode('utf-8'))
-        #s.flush()
-        result = s.recv(4096)
-        result = json.loads(result.encode('utf-8'))
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(self.address)
+        data = s.makefile(mode="rw")
+        data.write(json.dumps(message) + '\n')
+        data.flush()
+        result = json.loads(data.readline())
+        data.flush()
         s.close()
         return result
         pass
@@ -85,14 +87,17 @@ class DatabaseProxy(object):
         #
         # Your code here.
         #
-        arguments = []
-        message = {"method": "write" , "args": arguments}
-        s = socket.create_connection(self.address)
-        s.sendall(json.dumps(message).encode('utf-8'))
-        #s.flush()
-        result = json.loads(s.recv(4096))
+        message = {"method": "write" , "args": fortune}
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(self.address)
+        data = s.makefile(mode="rw")
+        data.write(json.dumps(message) + '\n')
+        data.flush()
+        result = json.loads(data.readline())
+        data.flush()
         s.close()
-        return result
+        if result:
+            print(result)
         pass
 
 # -----------------------------------------------------------------------------

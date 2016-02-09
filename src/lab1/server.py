@@ -67,14 +67,20 @@ class Server(object):
         #
         # Your code here.
         #
-        return self.db.read()
+        self.rwlock.read_acquire()
+        result = self.db.read()
+        self.rwlock.read_release()
+        return result
         pass
 
     def write(self, fortune):
         #
         # Your code here.
         #
-        return self.db.write(fortune)
+        self.rwlock.write_acquire()
+        result = self.db.write(fortune)
+        self.rwlock.write_release()
+        return result
         pass
 
 
@@ -119,19 +125,25 @@ class Request(threading.Thread):
         #
         # Your code here.
         # {arg: data,arg2: data2}
+        print("Processing request")
         incoming = json.loads(request)
         print(incoming['method'])
         if incoming != None and incoming['method'] != None and incoming['args'] != None:
-            if incoming['method'] == "write":
-                # do stuff
+            if incoming['method'] == "write" and len(incoming['args']) > 0:
+                print(incoming['args'])
                 result = json.dumps(self.db_server.write(incoming['args']))
             elif incoming['method'] == "read":
                 print("in read server")
                 result = json.dumps(self.db_server.read())
             else:
                 # throw some error
+                print("in error")
                 result = json.dumps({"error" : {"name": "Unknown method" , "args": incoming['method']}})
-            return result
+        else:
+            # throw some error
+            print("in error")
+            result = json.dumps({"error" : {"name": "Unknown method" , "args": incoming['method']}})
+        return result
         pass
 
     def run(self):
@@ -139,7 +151,9 @@ class Request(threading.Thread):
             # Threat the socket as a file stream.
             worker = self.conn.makefile(mode="rw")
             # Read the request in a serialized form (JSON).
+            print("#1")
             request = worker.readline()
+            print("run Request()")
             # Process the request.
             result = self.process_request(request)
             # Send the result.

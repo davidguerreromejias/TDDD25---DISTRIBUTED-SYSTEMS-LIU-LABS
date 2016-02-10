@@ -93,12 +93,19 @@ class Skeleton(threading.Thread):
         #
         # Your code here.
         #
+        # create a socket? and pass?
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.request = Request(self, s, address)
+        
         pass
 
     def run(self):
         #
         # Your code here.
         #
+        # first call by peer
+        
+        
         pass
 
 

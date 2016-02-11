@@ -10,6 +10,7 @@
 import threading
 import socket
 import json
+import builtins
 
 """Object Request Broker
 
@@ -49,6 +50,22 @@ class Stub(object):
         #
         # Your code here.
         #
+        # should parse and send json requests and send these to skeleton of the requested peer
+        message = json.dumps({"method": method, "args": args})
+        # for serialized json
+        message += '\n'
+        transmission_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        transmission_socket.connect(self.address)
+        data = transmission_socket.makefile(mode="rw")
+        data.write(json.dumps(message) + '\n')
+        data.flush()
+        result = json.loads(data.readline())
+        data.flush()
+        transmission_socket.close()
+        if result['error']:
+            # raise error needs to be reworked
+            raise getattr(builtins,result['error']['name'])(*result['error']['args'])
+        return result['result']
         pass
 
     def __getattr__(self, attr):
@@ -73,7 +90,33 @@ class Request(threading.Thread):
         #
         # Your code here.
         #
+        try:
+            worker = self.conn.makefile(mode="rw")
+            request = worker.readline()
+            result = self.owner.handle_request(request)
+            # newline might not be needed
+            worker.write(result + '\n')
+            worker.flush()
+        except Exception as e:
+            print("\t{}: {}".format(type(e), e))
+        finally:
+            self.conn.close()
         pass
+    
+    def handle_request(request):
+        try:
+            print("Request::handle_request() : Entering function")
+            incoming = json.loads(request)
+            # not sure if the output is correct from the __getattr__
+            type_of_object = __getattr__(self.owner,incoming['args'])
+            print(type_of_object)
+            result = json.dumps({"result": type_of_object})
+        except AttributeError as e:
+            print("\t{}: {}".format(type(e), e))
+            result = json.dumps({"error" : {"name": type(e), "args": e}})
+        finally:
+            print("Request::handle_request() : Exiting function")
+            return result
 
 
 class Skeleton(threading.Thread):
@@ -93,9 +136,13 @@ class Skeleton(threading.Thread):
         #
         # Your code here.
         #
-        # create a socket? and pass?
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.request = Request(self, s, address)
+        # create a socket? and pass? connect before send?
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind(address)
+        # The argument to listen() is just for protection from multiple requests
+        self.server_socket.listen(1)
+        
+        #self.request = Request(self, s, address)
         
         pass
 
@@ -103,9 +150,20 @@ class Skeleton(threading.Thread):
         #
         # Your code here.
         #
+        while True:
+            try:
+                conn, addr = self.server_socket.accept()
+                if self.owner.check():
+                    new_request = Request(self.owner,conn,addr)
+                    print("Serving a new request from {0}".format(addr))
+                    new_request.start()
+                else:
+                    conn.close()
+            except socket.error:
+                continue
         # first call by peer
-        
-        
+        # listen for requests
+        # when we got a request check if the owner is still alive
         pass
 
 
@@ -152,8 +210,8 @@ class Peer:
         """Start the communication interface."""
 
         self.skeleton.start()
-        self.id, self.hash = self.name_service.register(self.type,
-                                                        self.address)
+        #print(self.type, self.address)
+        self.id, self.hash = self.name_service.register(self.type, self.address)
 
     def destroy(self):
         """Unregister the object before removal."""

@@ -53,19 +53,25 @@ class Stub(object):
         # should parse and send json requests and send these to skeleton of the requested peer
         message = json.dumps({"method": method, "args": args})
         # for serialized json
-        message += '\n'
-        transmission_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        transmission_socket.connect(self.address)
-        data = transmission_socket.makefile(mode="rw")
-        data.write(json.dumps(message) + '\n')
-        data.flush()
-        result = json.loads(data.readline())
-        data.flush()
-        transmission_socket.close()
-        if result['error']:
-            # raise error needs to be reworked
-            raise getattr(builtins,result['error']['name'])(*result['error']['args'])
-        return result['result']
+        message += "\n"
+        try:
+            transmission_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            transmission_socket.connect(self.address)
+            data = transmission_socket.makefile(mode="rw")
+            data.write(message)
+            data.flush()
+            result = json.loads(data.readline())
+            data.flush()
+            transmission_socket.close()
+            #print(result)
+            if 'error' in result:
+                # Maybe fix a more specific error
+                raise Exception("errorrr")
+            return result['result']
+        except Exception as e:
+            print("\t{}: {}".format(type(e),e))
+        finally:
+            transmission_socket.close()
         pass
 
     def __getattr__(self, attr):
@@ -101,14 +107,14 @@ class Request(threading.Thread):
             print("\t{}: {}".format(type(e), e))
         finally:
             self.conn.close()
-        pass
+        
     
     def handle_request(request):
         try:
             print("Request::handle_request() : Entering function")
             incoming = json.loads(request)
             # not sure if the output is correct from the __getattr__
-            type_of_object = __getattr__(self.owner,incoming['args'])
+            type_of_object = __getattr__(self.owner,incoming['method'])(*incoming['args'])
             print(type_of_object)
             result = json.dumps({"result": type_of_object})
         except AttributeError as e:
@@ -153,14 +159,12 @@ class Skeleton(threading.Thread):
         while True:
             try:
                 conn, addr = self.server_socket.accept()
-                if self.owner.check():
-                    new_request = Request(self.owner,conn,addr)
-                    print("Serving a new request from {0}".format(addr))
-                    new_request.start()
-                else:
-                    conn.close()
+                new_request = Request(self.owner,conn,addr)
+                print("Serving a new request from {0}".format(addr))
+                new_request.start()
             except socket.error:
-                continue
+                print("SocketError")
+                
         # first call by peer
         # listen for requests
         # when we got a request check if the owner is still alive

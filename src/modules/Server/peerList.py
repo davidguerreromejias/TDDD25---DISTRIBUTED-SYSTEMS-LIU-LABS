@@ -41,7 +41,19 @@ class PeerList(object):
             #
             print(self.owner.name_service.require_all(self.owner.type))
             print(type(self.owner.name_service))
+            existing_peers = self.owner.name_service.require_all(self.owner.type)
+            # for every id and address in list
+            for id,addr in existing_peers:
+                # only register peers with lower id's to owner
+                if id < self.owner.id:
+                    print("Register Peer:\t" + id + "\t At Owner:\t" + self.owner.id)
+                    self.owner.register_peer(id, addr)
 
+            # for every id i peer list
+            for id in self.get_peers():
+                # Register this peer to the other peers
+                print("Register Peer:\t" + self.owner.id + "\t At Peer:\t" + id)
+                self.peer(id).register_peer(self.owner.id, self.owner.address)
             pass
         finally:
             self.lock.release()
@@ -54,6 +66,11 @@ class PeerList(object):
             #
             # Your code here.
             #
+            # for every id in peer list
+            for id in get_peers():
+                # Unregister this peer
+                print("Unregister Peer:\t" + self.owner.id + "\t At Peer:\t" + id)
+                self.peer(id).unregister_peer(self.owner.id)
             pass
         finally:
             self.lock.release()

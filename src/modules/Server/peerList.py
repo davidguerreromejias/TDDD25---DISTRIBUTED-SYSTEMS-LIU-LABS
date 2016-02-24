@@ -46,13 +46,13 @@ class PeerList(object):
             for id,addr in existing_peers:
                 # only register peers with lower id's to owner
                 if id < self.owner.id:
-                    print("Register Peer:\t" + id + "\t At Owner:\t" + self.owner.id)
+                    print("Register Peer:\t{}\t At Owner:\t{}".format(id, self.owner.id))
                     self.owner.register_peer(id, addr)
 
             # for every id i peer list
             for id in self.get_peers():
                 # Register this peer to the other peers
-                print("Register Peer:\t" + self.owner.id + "\t At Peer:\t" + id)
+                print("Register Peer:\t{}\t At Peer:\t{}".format(id, self.owner.id))
                 self.peer(id).register_peer(self.owner.id, self.owner.address)
             pass
         finally:
@@ -69,7 +69,7 @@ class PeerList(object):
             # for every id in peer list
             for id in get_peers():
                 # Unregister this peer
-                print("Unregister Peer:\t" + self.owner.id + "\t At Peer:\t" + id)
+                print("Unregister Peer:\t{}\t At Peer:\t{}".format(self.owner.id,id))
                 self.peer(id).unregister_peer(self.owner.id)
             pass
         finally:

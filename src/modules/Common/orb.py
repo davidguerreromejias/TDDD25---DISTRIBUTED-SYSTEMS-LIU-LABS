@@ -68,8 +68,8 @@ class Stub(object):
                 # Maybe fix a more specific error
                 raise Exception("errorrr")
             return result['result']
-        except Exception as e:
-            print("\t{}: {}".format(type(e),e))
+        #except Exception as e:
+        #    print("\t{}: {}".format(type(e).__name__,e.args))
         finally:
             transmission_socket.close()
         pass
@@ -96,30 +96,32 @@ class Request(threading.Thread):
         #
         # Your code here.
         #
+        # seriallize error properly
         try:
             worker = self.conn.makefile(mode="rw")
             request = worker.readline()
-            result = self.owner.handle_request(request)
+            result = self.handle_request(request)
             # newline might not be needed
             worker.write(result + '\n')
             worker.flush()
         except Exception as e:
-            print("\t{}: {}".format(type(e), e))
+            #print(type(e))
+            print("\t{}: {}".format(type(e).__name__,e.args))
         finally:
             self.conn.close()
         
     
-    def handle_request(request):
+    def handle_request(self,request):
         try:
             print("Request::handle_request() : Entering function")
             incoming = json.loads(request)
             # not sure if the output is correct from the __getattr__
             type_of_object = __getattr__(self.owner,incoming['method'])(*incoming['args'])
-            print(type_of_object)
+            #print(type_of_object)
             result = json.dumps({"result": type_of_object})
-        except AttributeError as e:
-            print("\t{}: {}".format(type(e), e))
-            result = json.dumps({"error" : {"name": type(e), "args": e}})
+        except Exception as e:
+            print("\t{}: {}".format(type(e).__name__,e.args))
+            result = json.dumps({"error" : {"name": type(e).__name__, "args": e.args}})
         finally:
             print("Request::handle_request() : Exiting function")
             return result

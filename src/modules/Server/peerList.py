@@ -39,24 +39,24 @@ class PeerList(object):
             #
             # Your code here.
             #
-            print(self.owner.name_service.require_all(self.owner.type))
+            #print(self.owner.name_service.require_all(self.owner.type))
             #print(type(self.owner.name_service))
             existing_peers = self.owner.name_service.require_all(self.owner.type)
             # for every id and address in list
             for peer_id,addr in existing_peers:
                 # only register peers with lower id's to owner
                 if peer_id < self.owner.id:
-                    print("Register Peer:\t{}\t At Owner:\t{}".format(peer_id, self.owner.id))
+                    #print("Register Peer:\t{}\t At Owner:\t{}".format(peer_id, self.owner.id))
                     self.owner.register_peer(peer_id, addr)
 
             # for every id i peer list
             #print(self.peers)
             for peer_id in self.get_peers():
                 # Register this peer to the other peers
-                print("Register Peer:\t{}\t At Peer:\t{}".format(peer_id, self.owner.id))
-                print(self.owner.address)
+                #print("Register Peer:\t{}\t At Peer:\t{}".format(peer_id, self.owner.id))
+                #print(self.owner.address)
                 self.peer(peer_id).register_peer(self.owner.id, self.owner.address)
-                print("did not crash")
+                #print("did not crash")
             pass
         finally:
             self.lock.release()
@@ -72,7 +72,7 @@ class PeerList(object):
             # for every id in peer list
             for peer_id in self.get_peers():
                 # Unregister this peer
-                print("Unregister Peer:\t{}\t At Peer:\t{}".format(self.owner.id,peer_id))
+                #print("Unregister Peer:\t{}\t At Peer:\t{}".format(self.owner.id,peer_id))
                 self.peer(peer_id).unregister_peer(self.owner.id)
             pass
         finally:

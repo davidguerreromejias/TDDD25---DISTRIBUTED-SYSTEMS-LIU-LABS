@@ -134,6 +134,7 @@ class Request(threading.Thread):
                 result = json.dumps(self.db_server.write(incoming['args']))
             elif incoming['method'] == "read":
                 print("in read server")
+                #result = json.dumps({"result": self.db_server.read()})
                 result = json.dumps(self.db_server.read())
             else:
                 # throw some error

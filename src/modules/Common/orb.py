@@ -10,7 +10,7 @@
 import threading
 import socket
 import json
-import builtins
+#import builtins
 
 """Object Request Broker
 
@@ -63,13 +63,14 @@ class Stub(object):
             result = json.loads(data.readline())
             data.flush()
             transmission_socket.close()
-            #print(result)
             if 'error' in result:
                 # Maybe fix a more specific error
-                raise Exception("errorrr")
+                error_type = result['error']['name']
+                arguments = result['error']['args']
+                error_class = type(error_type, (Exception,),{})
+                raise error_class(*arguments)
+                
             return result['result']
-        #except Exception as e:
-        #    print("\t{}: {}".format(type(e).__name__,e.args))
         finally:
             transmission_socket.close()
         pass
@@ -104,26 +105,21 @@ class Request(threading.Thread):
             # newline might not be needed
             worker.write(result + '\n')
             worker.flush()
-        except Exception as e:
-            #print(type(e))
-            print("\t{}: {}".format(type(e).__name__,e.args))
+        #except Exception as e:
+            #print("\t{}: {}".format(type(e).__name__,e.args))
         finally:
             self.conn.close()
         
     
     def handle_request(self,request):
         try:
-            print("Request::handle_request() : Entering function")
             incoming = json.loads(request)
-            # not sure if the output is correct from the __getattr__
-            type_of_object = __getattr__(self.owner,incoming['method'])(*incoming['args'])
-            #print(type_of_object)
+            type_of_object = getattr(self.owner,incoming['method'])(*incoming['args'])
             result = json.dumps({"result": type_of_object})
         except Exception as e:
-            print("\t{}: {}".format(type(e).__name__,e.args))
-            result = json.dumps({"error" : {"name": type(e).__name__, "args": e.args}})
+            #print("\t{}: {}".format(type(e).__name__,e.args))
+            result = json.dumps({"error" : {"name": e.__class__.__name__, "args": e.args}})
         finally:
-            print("Request::handle_request() : Exiting function")
             return result
 
 

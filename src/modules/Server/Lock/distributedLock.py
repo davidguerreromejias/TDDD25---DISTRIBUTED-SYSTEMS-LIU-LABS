@@ -89,6 +89,17 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+        # give the token to the peer with lowest id
+        print(min(self.peer_list.get_peers()[0]))
+        lowest_id = min(self.peer_list.get_peers()[0])
+        if self.owner.id == lowest_id:
+            self.token = (self.time,lowest_id)
+            self.state = TOKEN_HELD
+        else:
+            self.state = TOKEN_PRESENT
+        
+        
+        
         pass
 
     def destroy(self):

@@ -89,17 +89,19 @@ class DistributedLock(object):
         #
         # Your code here.
         #
-        # give the token to the peer with lowest id
-        print(min(self.peer_list.get_peers()[0]))
-        lowest_id = min(self.peer_list.get_peers()[0])
-        if self.owner.id == lowest_id:
-            self.token = (self.time,lowest_id)
-            self.state = TOKEN_HELD
-        else:
-            self.state = TOKEN_PRESENT
-        
-        
-        
+        self.peer_list.lock.aquire()
+        try:
+            print(min(self.peer_list.get_peers()[0]))
+            lowest_id = min(self.peer_list.get_peers()[0])
+            if self.owner.id == lowest_id:
+                self.token = (self.time,lowest_id)
+                self.state = TOKEN_HELD
+            else:
+                # Redundant but are there for clarification
+                self.state = NO_TOKEN
+        finally:
+            print("done")
+            self.peer_list.lock.release()
         pass
 
     def destroy(self):
@@ -112,6 +114,11 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+        unregister_peer(self.owner.id)
+        if self.state == TOKEN_PRESENT:
+            release()
+        elif self.state == TOKEN_HELD:
+            obtain_token(self.token)
         pass
 
     def register_peer(self, pid):
@@ -119,6 +126,7 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+        self.peer_list.register_peer(pid, self.owner.address)
         pass
 
     def unregister_peer(self, pid):
@@ -126,6 +134,7 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+        self.peer_list.unregister_peer(pid)
         pass
 
     def acquire(self):
@@ -134,6 +143,7 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+        
         pass
 
     def release(self):
@@ -149,6 +159,9 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+        # add the request to the list, potential risk of simultanous access, needs to be locked
+        self.request += (time,pid)
+        
         pass
 
     def obtain_token(self, token):

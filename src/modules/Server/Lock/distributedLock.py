@@ -87,20 +87,27 @@ class DistributedLock(object):
 
         """
         #
-        # Your code here.
+        # Your code here
         #
+
+        # Should not need to lock when instantiating ourself in the request list
+        self.request[self.owner.id] = 0
+
         self.peer_list.lock.aquire()
+        # Try catch to make sure we always release the global peer list lock
         try:
-            print(min(self.peer_list.get_peers()[0]))
-            lowest_id = min(self.peer_list.get_peers()[0])
-            if self.owner.id == lowest_id:
-                self.token = (self.time,lowest_id)
-                self.state = TOKEN_HELD
-            else:
-                # Redundant but are there for clarification
-                self.state = NO_TOKEN
+            # Get the peer list with only the IDs
+            peers = self.peer_list.get_peers()[0]
+            #print(peers)
+            # Instantiate the request list for peers from the peer list
+            for peer_id in peers:
+                self.request[peer_id] = 0
+            # if the list is empty or I have the smallest ID, I get to start with the token
+            if len(peers) == 0 or self.owner.id > min(peers):
+                self.token = {self.owner.id: self.time}
+                self.state = TOKEN_PRESENT
         finally:
-            print("done")
+            #print("done")
             self.peer_list.lock.release()
         pass
 

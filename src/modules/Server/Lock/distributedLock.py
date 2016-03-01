@@ -121,11 +121,20 @@ class DistributedLock(object):
         #
         # Your code here.
         #
-        unregister_peer(self.owner.id)
-        if self.state == TOKEN_PRESENT:
-            release()
-        elif self.state == TOKEN_HELD:
-            obtain_token(self.token)
+        #unregister_peer(self.owner.id)
+        if self.state == TOKEN_HELD:
+            self.release()
+        
+        self.peer_list.lock.acquire()
+        try:
+            peers = self.peer_list.get_peers()[0]
+            # If there exist other peers and we have the token
+            if len(peers) > 0 and self.state == TOKEN_PRESENT:
+                # Note: Hmm, what do we do if the peer we want to give the token to died? Loop the list?
+                self.peer_list.peer(min(peers)).obtain_token(self.token)
+
+        finally:
+            self.peer_list.lock.release()
         pass
 
     def register_peer(self, pid):

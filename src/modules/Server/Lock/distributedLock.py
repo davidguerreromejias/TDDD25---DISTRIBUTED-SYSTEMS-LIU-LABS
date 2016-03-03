@@ -142,7 +142,20 @@ class DistributedLock(object):
         #
         # Your code here.
         #
-        self.peer_list.register_peer(pid, self.owner.address)
+
+        
+        self.peer_list.lock.acquire()
+        try:
+            # add the calling peer to the request list
+            self.request[pid] = 0
+            # peers = self.peer_list.get_peers()[0]
+            # no key present?
+            # pid is lowest
+            # peer has token? possible?
+            
+            
+        finally:
+            self.peer_list.lock.release()
         pass
 
     def unregister_peer(self, pid):
@@ -150,7 +163,11 @@ class DistributedLock(object):
         #
         # Your code here.
         #
-        self.peer_list.unregister_peer(pid)
+        self.peer_list.lock.acquire()
+        try:
+            self.request.pop(pid,None)
+        finally:
+            self.peer_list.lock.release()
         pass
 
     def acquire(self):
@@ -159,7 +176,28 @@ class DistributedLock(object):
         #
         # Your code here.
         #
-        
+        # called when the current peer tries to acquire the lock; if the
+        # token is not present, the peer should notify the rest about its desire and
+        # suspend its execution until the token is passed to the peer.
+        self.peer_list.lock.acquire()
+        try:
+            peers = self.peer_list.get_peers()[0]
+            if len(peers) > 0 and self.state == NO_TOKEN:
+                self.time += 1
+                self.request[self.owner.id] = self.time
+            
+                for peer_id in peers:
+                    if peer_id != self.owner.id:
+                        self.peer_list.peer(peer_id).request_token(self.time, self.owner.id)
+                    
+                # Try to acquire the lock, will be waiting until another peer release the lock
+                # This assumes that locks are implemented in a way that allows shared locks
+                self.peer_list.lock.acquire()
+        finally:
+            self.peer_list.lock.release()
+        self.peer_list.lock.acquire()
+        self.state = TOKEN_HELD
+        self.peer_list.lock.release()
         pass
 
     def release(self):
@@ -168,6 +206,19 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+        #called when the current peer releases the lock; if there are
+        #peers waiting for the token, the current peer should pass the token to one
+        #of them (carefully think through to whom in order to ensure fairness).
+        self.request[self.owner.id] = 0
+        if max(self.request) > 0: 
+            for request_id,request_time in self.request.items():
+                if request_time == min(self.request):
+                    candidates = [candidates, request_id]
+        
+            self.state = NO_TOKEN
+            self.peer_list.peer(min(candidates)).obtain_token(self.token) 
+        else:
+            self.state = TOKEN_PRESENT
         pass
 
     def request_token(self, time, pid):
@@ -175,9 +226,16 @@ class DistributedLock(object):
         #
         # Your code here.
         #
-        # add the request to the list, potential risk of simultanous access, needs to be locked
-        self.request += (time,pid)
-        
+        # called when some other peer requests the token from
+        # the current peer (should the current one have the token or not).
+        self.peer_list.lock.acquire()
+        try:
+            # add the request to the list, potential risk of simultanous access, needs to be locked
+            self.request[pid] = time
+            if self.state == TOKEN_PRESENT:
+                self.peer_list.peer(pid).
+        finally:
+            self.peer_list.lock.release()
         pass
 
     def obtain_token(self, token):
@@ -186,6 +244,13 @@ class DistributedLock(object):
         #
         # Your code here.
         #
+
+        self.peer_list.lock.acquire()
+        try:
+
+
+        finally:
+            self.peer_list.lock.release()
         pass
 
     def display_status(self):

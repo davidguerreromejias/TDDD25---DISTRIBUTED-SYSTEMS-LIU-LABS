@@ -112,12 +112,11 @@ class Server(orb.Peer):
     def read(self):
         """Read a fortune from the database."""
 
-        #
-        # Your code here.
-        #
         self.drwlock.read_acquire()
-        self.db.read()
-        self.drwlock.read_release()
+        try:
+            return self.db.read()
+        finally:
+            self.drwlock.read_release()
 
     def write(self, fortune):
         """Write a fortune to the database.
